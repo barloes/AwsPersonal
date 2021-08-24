@@ -1,0 +1,127 @@
+type User @model
+  {
+  id: ID!
+  email: String!
+  isAdmin: Boolean @default(value: "false")
+
+  papers: [Paper] @connection(keyName: "paperByUser", fields: ["id"])
+
+  questions: [Question] @connection(keyName:"questionByUser", fields: ["id"])
+
+  posts: [Post] @connection(keyName: "postByUser", fields: ["id"])
+  }
+
+type Paper @model
+  @key(fields:["paperCodeId"])
+  @key(name: "paperByUser", fields:["userId"])
+  {
+    paperCodeId: ID!
+    paperCode: [PaperCode] @connection(keyName:"codeByPaper", fields:["paperCodeId"])
+
+    userId: ID!
+    user: [User] @connection(fields: ["userId"])
+
+    posts: [Post] @connection(keyName: "postByPaper" ,fields: ["paperCodeId"])
+
+    questions: [Question] @connection(keyName: "questionByPaper",fields: ["paperCodeId"])
+  }
+
+type PaperCode @model
+@key(fields: ["academicYear","semester","module"])
+@key(name:"codeByPaper", fields:["id"])
+  {
+    id:ID!
+    academicYear: ID!
+    semester: SemesterType!
+    module: ID!
+
+    paper: [Paper] @connection(fields:["id"])
+  }
+
+type Post @model
+  @key(name: "postByUser", fields:["userId"])
+  @key(name: "postByPaper", fields:["paperCodeId"])
+  @key(name: "postByParentPost", fields:["parentPostId"])
+  {
+    id: ID!
+    fileDest: String
+    content: String
+    postType:PostType!
+
+    paperCodeId: ID!
+    paper: [Paper] @connection (fields:["paperCodeId"])
+
+    userId: ID!
+    user: [User] @connection(fields: ["userId"])
+
+    parentPostId: ID
+    parentPost: [Post] @connection(fields:["parentPostId"])
+
+    childPosts: [Post] @connection(keyName:"postByParentPost", fields:["id"])
+
+    postVotes: [PostVote] @connection(keyName:"postVoteByPost" fields: ["id"])
+  }
+
+type PostVote @model
+@key(name: "postVoteByPost",fields:["postId"])
+  {
+    id:ID!
+    vote: VoteType!
+
+    postId: ID!
+    post: [Post] @connection(fields: ["postId"])
+
+    postVoteUserId: ID!
+    postVoteUser: [PostVoteUser] @connection(keyName:"postVoteUserbyPostVote" ,fields:["postVoteUserId"])
+  }
+
+type PostVoteUser @model
+  @key(fields:["userId","postId"])
+  @key(name:"postVoteUserbyPostVote",fields:["id"])
+  {
+    id: ID!
+    userId: ID!
+    postId: ID!
+
+    postVote: [PostVote] @connection(fields: ["id"])
+  }
+
+type Question @model
+  @key(name: "questionByUser", fields:["userId"])
+  @key(name: "questionByPaper", fields:["paperCodeId","questionNo"])
+  {
+    id: ID!
+    questionNo: Int!
+
+    paperCodeId: ID!
+    paper: [Paper] @connection(fields: ["paperCodeId"])
+
+    userId: ID!
+    user: User @connection(fields:["userId"])
+
+    answers: [Answer] @connection(fields:["id"])
+  }
+
+  type Answer @model
+    {
+      id: ID!
+      fileDest: String
+      content: String
+
+      questionId: ID!
+      question: [Question] @connection(fields:["questionId"])
+    }
+
+enum SemesterType {
+  S1
+  S2
+}
+
+enum VoteType {
+  True
+}
+
+enum PostType{
+  Parent
+  Child
+}
